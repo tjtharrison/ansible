@@ -1,0 +1,26 @@
+---
+- hosts: all
+  tasks:
+    - name: "Deploy Dashboard yml"
+      copy:
+        src: ./config/kubernetes-dashboard.yaml
+        dest: /home/kubeadmin/kubernetes-dashboard.yaml
+        owner: kubeadmin
+        group: kubeadmin
+    - name: "Wait until etcd has started before completing"
+      shell: "kubectl create -f /home/kubeadmin/kubernetes-dashboard.yaml"
+      become_user: kubeadmin
+    - name: "Get dashboard service port"
+      register: servicePort
+      shell: 'kubectl get services -n kube-system | grep "dashboard"'
+    - name: "Print shell output"
+      debug: msg="{{ servicePort.stdout }}"
+    - name: "Make Dashboard admin"
+      shell: "kubectl create clusterrolebinding kubernetes-dashboard --clusterrole=cluster-admin --serviceaccount=kube-system:kubernetes-dashboard"
+      become_user: kubeadmin
+    - name: "Get Dashboard Token"
+      shell: "kubectl -n kube-system describe secrets $(kubectl -n kube-system get secret | grep 'dashboard-token' | awk {'print $1'}) | grep 'token:'"
+      register: token
+      become_user: kubeadmin
+    - name: "Print Dashboard Token"
+      debug: msg="{{ token.stdout }}"

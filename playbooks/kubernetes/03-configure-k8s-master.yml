@@ -1,0 +1,58 @@
+---
+- hosts: all
+  tasks:
+    - name: "Create kubeadmin User"
+      user:
+        name: kubeadmin
+        comment: Kubernetes Admin
+        groups: sudo
+    - name: "Disable password for sudo (kubeadmin)"
+      shell: 'echo "kubeadmin ALL=NOPASSWD: ALL" > /etc/sudoers.d/kubeadmin'
+    - name: "Create Kubernetes cluster"
+      command: "{{ item }}"
+      become: yes
+      become_user: kubeadmin
+      with_items:
+        - sudo kubeadm init --pod-network-cidr 192.168.0.0/16 --apiserver-advertise-address {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}
+    - name: "Create Kubelet Directory"
+      file:
+        path: /home/kubeadmin/.kube
+        owner: kubeadmin
+        group: kubeadmin
+        state: directory
+        mode: '0777'
+    - name: "Copy admin.conf to kubeadmin User"
+      copy:
+        remote_src: yes
+        src: /etc/kubernetes/admin.conf
+        dest: /home/kubeadmin/.kube/config
+        owner: kubeadmin
+        group: kubeadmin
+        mode: '0644'
+    - name: "Copy .kube to root"
+      copy:
+        remote_src: yes
+        src: /home/kubeadmin/.kube
+        dest: /root/
+        owner: root
+        group: root
+        mode: '0644'
+    - name: "Deploy Calico Network plugin"
+      command: "kubectl apply -f https://docs.projectcalico.org/v3.11/manifests/calico.yaml"
+      become: yes
+      become_user: kubeadmin
+    - name: "Print kubeadmin Join command"
+      become_user: kubeadmin
+      command: "kubeadm token create --print-join-command"
+      register: join
+    - name: "Print kubernetes Join Command"
+      debug: msg="{{ join.stdout }}"
+    - name: "Wait until etcd has started before completing"
+      shell: kubectl get pods --all-namespaces | grep "etcd"
+      become_user: kubeadmin
+      register: result
+      retries: 5
+      delay: 30
+      until: result.stdout_lines | list | count == 1
+    - name: "Print shell output"
+      debug: msg="Cluster has started, use join command to join your Nodes to the cluster"

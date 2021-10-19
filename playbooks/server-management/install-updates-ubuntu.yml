@@ -1,0 +1,11 @@
+---
+- hosts: all
+  tasks:
+  - name: "Update Apt"
+    apt:
+      update_cache: yes
+    become: yes
+  - name: Update all packages to the latest version
+    apt:
+      upgrade: dist
+    become: yes

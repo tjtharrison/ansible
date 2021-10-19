@@ -1,0 +1,56 @@
+---
+- hosts: all
+  tasks:
+  - name: "Update Apt"
+    apt:
+      update_cache: yes
+  - name: "Install prerequisits"
+    apt:
+      name: docker.io
+  - name: "Start Docker Service"
+    service:
+      name: docker
+      state: restarted
+  - name: "Add Kubernetes signing key"
+    apt_key:
+      url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+      state: present
+  - name: "Add Kubernetes Repository"
+    apt_repository:
+      repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+      state: present
+  - name: "Update Apt"
+    apt:
+      update_cache: yes
+  - name: "Install Kubernetes"
+    apt:
+      name: "{{ packages }}"
+    vars:
+      packages:
+        - kubelet
+        - kubeadm
+        - kubectl
+        - kubernetes-cni
+        - nfs-common
+  - name: Hold Kubernetes
+    dpkg_selections:
+      name: "kubelet"
+      selection: hold
+    dpkg_selections:
+      name: "kubeadm"
+      selection: hold
+    dpkg_selections:
+      name: "kubectl"
+      selection: hold    
+    dpkg_selections:
+      name: "kubernetes-cni"
+      selection: hold   
+  - name: "Disable SWAP"
+    shell: swapoff -a
+  - name: Remove current swaps from fstab
+    lineinfile:
+      dest: /etc/fstab
+      regexp: '(?i)^([^#][\S]+\s+(none|swap)\s+swap.*)'
+      line: '# \1'
+      backrefs: yes
+      state: present

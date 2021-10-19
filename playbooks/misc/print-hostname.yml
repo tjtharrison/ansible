@@ -1,0 +1,5 @@
+---
+- hosts: all
+  tasks:
+  - name: "Print Hostname"
+    debug: var=inventory_hostname

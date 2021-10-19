@@ -1,0 +1,19 @@
+---
+- hosts: all
+  tasks:
+  - name: "Start node-exporter container"
+    docker:
+      name: node-exporter
+      image: prom/node-exporter
+      command: /bin/node_exporter \
+      --path.procfs=/host/proc \
+      --path.sysfs=/host/sys \
+      --collector.filesystem.ignored-mount-points \
+      ^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)
+      state: started
+      ports:
+      - 9100
+      volumes_from:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro

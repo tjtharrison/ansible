@@ -1,0 +1,16 @@
+- hosts: all
+  become: yes
+  tasks:
+  - name: Change history size and history rollback
+    replace:
+      path: "{{ item.path }}"
+      regexp: "{{ item.regexp1 }}"
+      replace: "{{ item.replace }}"
+    with_items:
+      - { path: '~/.bashrc', regexp1: 'HISTSIZE=1000', replace: 'HISTSIZE=""'}
+      - { path: '~/.bashrc', regexp1: 'HISTFILESIZE=2000', replace: 'HISTFILESIZE=""'}
+  - name: Insert history time format
+    lineinfile:
+      path: ~/.bashrc
+      line: 'HISTTIMEFORMAT="%Y-%m-%d %T "'
+      insertafter: HISTFILESIZE.*

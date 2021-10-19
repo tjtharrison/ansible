@@ -1,0 +1,23 @@
+---
+- hosts: all
+  tasks:
+    - name: "Create Partition /dev/sdb1"
+      parted:
+        device: /dev/sdb
+        number: 1
+        state: present
+    - name: "Create Filesystem on /dev/sdb1"
+      filesystem:
+        fstype: ext4
+        dev: /dev/sdb1
+    - name: "Create Docker Directory"
+      file:
+        path: /var/lib/docker
+        state: directory
+        mode: '0777'
+    - name: "Create fstab entry"
+      lineinfile:
+        path: /etc/fstab
+        line: "/dev/sdb1 /var/lib/docker ext4  defaults 0 0"
+    - name: "Mount all from Fstab"
+      command: mount -a

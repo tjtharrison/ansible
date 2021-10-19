@@ -1,0 +1,23 @@
+---
+- hosts: all
+  tasks:
+  - name: "Create Partition /dev/sdc1"
+    parted:
+      device: /dev/sdc
+      number: 1
+      state: present
+  - name: "Create Filesystem on /dev/sdc1"
+    filesystem:
+      fstype: ext4
+      dev: /dev/sdc1
+  - name: "Create Kubelet Directory"
+    file:
+      path: /var/lib/kubelet
+      state: directory
+      mode: '0777'
+  - name: "Create fstab entry"
+    lineinfile:
+      path: /etc/fstab
+      line: "/dev/sdc1 /var/lib/kubelet ext4  defaults 0 0"
+  - name: "Mount all from Fstab"
+    command: mount -a

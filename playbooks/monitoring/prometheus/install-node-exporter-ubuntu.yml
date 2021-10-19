@@ -1,0 +1,47 @@
+---
+- hosts:
+  tasks:
+  - name: "Create node exporter user"
+    user:
+      name: node_exporter
+      comment: Node Exporter
+  - name: "Download node-exporter"
+    get_url:
+      url: https://github.com/prometheus/node_exporter/releases/download/v0.18.0/node_exporter-0.18.0.linux-amd64.tar.gz
+      dest: /tmp/node-exporter/node_exporter-0.18.0.linux-amd64.tar.gz
+  - name: "Extract node-exporter"
+    unarchive:
+      src: /tmp/node_exporter-0.18.0.linux-amd64.tar.gz
+      dest: /usr/local/bin/node_exporter
+  - name: "Set owner of node_exporter to node-exporter User"
+    file:
+      path: /usr/local/bin/node_exporter
+      owner: node_exporter
+      group: node_exporter
+      mode: '0644'
+  - name: ""Create node_exporter service
+    copy:
+      dest: "/etc/systemd/system/node_exporter.service"
+      content: |
+        [Unit]
+        Description=Prometheus Node Exporter
+        Wants=network-online.target
+        After=network-online.target
+
+        [Service]
+        User=node_exporter
+        Group=node_exporter
+        Type=simple
+        ExecStart=/usr/local/bin/node_exporter
+
+        [Install]
+        WantedBy=multi-user.target
+  - name: "Reload systemd"
+    systemd:
+      daemon_reload: yes
+  - name: "Start node_exporter Service"
+    systemd:
+      state: started
+      name: node_exporter
+      enabled: yes
+      masked: no
